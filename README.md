@@ -1,6 +1,6 @@
-# snapfix
+# Snapfix
 
-**Capture real Python objects from staging, scrub sensitive fields, emit `@pytest.fixture` files automatically.**
+**Capture real Python objects from staging, scrub sensitive fields, and emit `@pytest.fixture` files automatically.**
 
 ---
 
@@ -8,7 +8,7 @@
 
 You have a bug that only reproduces with real data. You need a test. You don't want to hand-build a factory that misses the edge case, and you don't want to copy-paste a production payload and accidentally commit a customer's email address.
 
-snapfix solves this with one decorator.
+Snapfix solves this with one decorator.
 
 ---
 
@@ -23,9 +23,9 @@ SnapFix can also act as a **debugging copilot for screenshots**: drop a tracebac
 
 ### 30-second interaction loop
 
-1. Drag screenshot into SnapFix
+1. Drag the screenshot into SnapFix
 2. SnapFix OCRs + parses stack traces / error signatures
-3. It maps likely cause and suggests a fix
+3. It maps the likely cause and suggests a fix
 4. You apply, run tests, and iterate
 
 This is the wedge that matters: engineers already share screenshots in Slack, PRs, and issue trackers. SnapFix converts that dead artifact into an executable next step.
@@ -34,11 +34,11 @@ This is the wedge that matters: engineers already share screenshots in Slack, PR
 
 | User type | Situation | Why SnapFix wins (time/effort delta) |
 |---|---|---|
-| Junior/Mid engineer on-call | Pager fires, only evidence is a screenshot from logs dashboard with a partial Python traceback | No manual transcription. SnapFix extracts error path + likely failing line and returns a patch direction in ~1-2 min vs 10-20 min of copy/search/context reconstruction. |
-| Senior dev reviewing PRs | CI fails on screenshot pasted in PR comment from a flaky test run | PR reviewer can diagnose without checking out branch first. SnapFix provides likely root cause + deterministic repro hints, shrinking back-and-forth cycles in async review. |
+| Junior/Mid engineer on-call | Pager fires, only evidence is a screenshot from the logs dashboard with a partial Python traceback | No manual transcription. SnapFix extracts error path + likely failing line and returns a patch direction in ~1-2 min vs 10-20 min of copy/search/context reconstruction. |
+| Senior dev reviewing PRs | CI fails on screenshot pasted in PR comment from a flaky test run | PR reviewer can diagnose without checking out the branch first. SnapFix provides likely root cause + deterministic repro hints, shrinking back-and-forth cycles in async review. |
 | Frontend engineer | PM posts a screenshot of a broken UI state (layout overflow, missing state, bad conditional render) | SnapFix can reason from visible UI + console error screenshot together; traditional “paste error in search” misses visual-state bugs. Faster path to a concrete component/file to inspect. |
 | DevRel / OSS maintainer | Issue reporters share screenshots instead of full logs (common in OSS) | Instead of rejecting low-quality bug reports, SnapFix triages noisy screenshots into structured repro hypotheses. Maintainer response latency drops, and issue closure rate improves. |
-| Bootstrapped founder / solo builder | Gets user-reported screenshots from production via support chat at odd hours | Screenshot-only bug triage means founder can ship fixes without full observability stack. Biggest early-stage leverage: reduces “time-to-first-fix” when team size is 1. |
+| Bootstrapped founder/solo builder | Gets user-reported screenshots from production via support chat at odd hours | Screenshot-only bug triage means founder can ship fixes without a full observability stack. Biggest early-stage leverage: reduces “time-to-first-fix” when team size is 1. |
 
 ### Brutal adoption criteria (not generic)
 
