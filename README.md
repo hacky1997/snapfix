@@ -12,6 +12,56 @@ snapfix solves this with one decorator.
 
 ---
 
+## Screenshot-to-fix mode (why this can become a real product)
+
+SnapFix can also act as a **debugging copilot for screenshots**: drop a traceback, terminal error, or UI failure screenshot, and get:
+
+1. Probable root cause
+2. Minimal patch strategy
+3. Confidence + risks
+4. Suggested verification steps
+
+### 30-second interaction loop
+
+1. Drag screenshot into SnapFix
+2. SnapFix OCRs + parses stack traces / error signatures
+3. It maps likely cause and suggests a fix
+4. You apply, run tests, and iterate
+
+This is the wedge that matters: engineers already share screenshots in Slack, PRs, and issue trackers. SnapFix converts that dead artifact into an executable next step.
+
+### 5 high-value scenarios where SnapFix is clearly superior
+
+| User type | Situation | Why SnapFix wins (time/effort delta) |
+|---|---|---|
+| Junior/Mid engineer on-call | Pager fires, only evidence is a screenshot from logs dashboard with a partial Python traceback | No manual transcription. SnapFix extracts error path + likely failing line and returns a patch direction in ~1-2 min vs 10-20 min of copy/search/context reconstruction. |
+| Senior dev reviewing PRs | CI fails on screenshot pasted in PR comment from a flaky test run | PR reviewer can diagnose without checking out branch first. SnapFix provides likely root cause + deterministic repro hints, shrinking back-and-forth cycles in async review. |
+| Frontend engineer | PM posts a screenshot of a broken UI state (layout overflow, missing state, bad conditional render) | SnapFix can reason from visible UI + console error screenshot together; traditional “paste error in search” misses visual-state bugs. Faster path to a concrete component/file to inspect. |
+| DevRel / OSS maintainer | Issue reporters share screenshots instead of full logs (common in OSS) | Instead of rejecting low-quality bug reports, SnapFix triages noisy screenshots into structured repro hypotheses. Maintainer response latency drops, and issue closure rate improves. |
+| Bootstrapped founder / solo builder | Gets user-reported screenshots from production via support chat at odd hours | Screenshot-only bug triage means founder can ship fixes without full observability stack. Biggest early-stage leverage: reduces “time-to-first-fix” when team size is 1. |
+
+### Brutal adoption criteria (not generic)
+
+SnapFix should be adopted only if at least one is true:
+
+- Your team regularly debugs from screenshots in Slack/Linear/Jira
+- You lose >3 engineer-hours/week to “can’t reproduce from partial logs”
+- You maintain OSS and receive low-context bug reports
+
+SnapFix will fail if:
+
+- Your org already has perfect, structured, searchable logs with full trace context
+- Your screenshots routinely omit the relevant error region
+- You expect fully autonomous fixes without human verification
+
+### YC / adoption / growth reality check
+
+- **YC partner lens:** The wedge is strong only if screenshot-to-fix is measurably faster than ChatGPT + manual OCR. Defensibility must come from workflow integration (GitHub, Slack, CI), not just model quality.
+- **Senior dev lens:** Adoption happens only with low false-confidence output. Show confidence scores, exact assumptions, and “don’t know” fallback paths.
+- **Growth lens (first 10k users):** Start with communities that already communicate in screenshots (indie hackers, OSS maintainers, agency teams). “Fix from screenshot in 90s” is a better hook than “AI debugger.”
+
+---
+
 ## Install
 
 ```bash
