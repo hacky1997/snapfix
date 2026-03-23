@@ -24,7 +24,6 @@ import sys
 import types
 from typing import Any
 
-
 # Import reconstruct directly — we need it available when executing fixture modules
 from snapfix.serializer import _TRUNC, _CIRC, _UNSZ
 

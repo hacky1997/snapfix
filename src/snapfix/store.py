@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import pathlib
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from snapfix.diff import SnapfixSnapshot, structural_diff, source_diff
 
@@ -17,7 +17,7 @@ class SnapfixStore:
 
     # ── Index I/O ─────────────────────────────────────────────────────────────
 
-    def _load_index(self) -> Dict:
+    def _load_index(self) -> dict:
         if self._index_path.exists():
             try:
                 return json.loads(self._index_path.read_text())
@@ -25,7 +25,7 @@ class SnapfixStore:
                 return {}
         return {}
 
-    def _save_index(self, idx: Dict) -> None:
+    def _save_index(self, idx: dict) -> None:
         tmp = self._index_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(idx, indent=2, default=str))
         tmp.replace(self._index_path)
@@ -36,8 +36,8 @@ class SnapfixStore:
         self,
         name: str,
         source: str,
-        metadata: Dict[str, Any],
-        serialized_data: Optional[Any] = None,
+        metadata: dict[str, Any],
+        serialized_data: Any | None = None,
     ) -> pathlib.Path:
         """Write fixture source + update snapshot if serialized_data provided."""
         safe = _sanitize(name)
@@ -55,7 +55,7 @@ class SnapfixStore:
         self._save_index(idx)
         return path
 
-    def list(self) -> List[Dict]:
+    def list(self) -> list[dict]:
         return list(self._load_index().values())
 
     def exists(self, name: str) -> bool:
@@ -102,7 +102,7 @@ class SnapfixStore:
     def has_snapshot(self, name: str) -> bool:
         return self._snapshots.has(name)
 
-    def snapshot_names(self) -> List[str]:
+    def snapshot_names(self) -> list[str]:
         return self._snapshots.list_names()
 
 
