@@ -1,0 +1,20 @@
+# snapfix.yaml — project-level configuration
+# Place this file in your project root.
+# All values are optional; shown here with their defaults.
+
+snapfix:
+  # Directory where fixture files are written.
+  # Relative paths are resolved from the project root.
+  output_dir: tests/fixtures
+
+  # Maximum serialization depth. Objects deeper than this emit a
+  # __snapfix_maxdepth__ sentinel instead of crashing.
+  max_depth: 10
+
+  # Maximum serialized payload size in bytes. Payloads larger than this
+  # emit a __snapfix_truncated__ sentinel and the fixture is not written.
+  max_size_bytes: 500000
+
+  # Set to false to disable all capture globally (e.g. in production).
+  # Can also be set via SNAPFIX_ENABLED=false environment variable.
+  enabled: true
