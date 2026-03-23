@@ -126,12 +126,12 @@ class Finding:
     match:       str
 
     def __str__(self) -> str:
-        # Redact the match in output — don't print real PII to terminal
         redacted = self.match[:4] + "***" if len(self.match) > 4 else "***"
+        safe_line = self.line.replace(self.match, redacted)   # ← scrub match from line
         return (
             f"  {self.file.name}:{self.line_number}  "
             f"[{self.pattern}]  {redacted}  "
-            f"— {self.line.strip()[:80]}"
+            f"— {safe_line.strip()[:80]}"
         )
 
 

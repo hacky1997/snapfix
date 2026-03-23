@@ -74,9 +74,9 @@ def _record(
     serializer = SnapfixSerializer(max_depth=effective_depth, max_size_bytes=effective_size)
     scrubber   = SnapfixScrubber(scrub_fields)
     codegen    = SnapfixCodegen()
-    store      = SnapfixStore(cfg.output_dir)
 
     try:
+        store      = SnapfixStore(cfg.output_dir)   # ← now inside try, error is caught
         serialized = serializer.serialize(obj)
         scrubbed, scrubbed_keys = scrubber.scrub(serialized)
         source = codegen.generate(

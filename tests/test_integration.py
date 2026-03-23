@@ -21,7 +21,7 @@ import pytest
 # Stub pytest.fixture so the generated file can be imported in tests
 _fake_pytest = types.ModuleType("pytest")
 _fake_pytest.fixture = lambda f: f  # type: ignore
-sys.modules.setdefault("pytest", _fake_pytest)
+# sys.modules.setdefault("pytest", _fake_pytest)
 
 
 def _reload_snapfix():
@@ -29,13 +29,18 @@ def _reload_snapfix():
         if "snapfix" in m:
             del sys.modules[m]
 
-
 def _import_fixture_file(path: pathlib.Path):
-    spec = importlib.util.spec_from_file_location("_fx_tmp", path)
-    mod  = importlib.util.module_from_spec(spec)  # type: ignore
-    sys.modules["_fx_tmp"] = mod
-    spec.loader.exec_module(mod)  # type: ignore
-    return mod
+    real_pytest = sys.modules.get("pytest")
+    sys.modules["pytest"] = _fake_pytest          # ← force replace
+    try:
+        spec = importlib.util.spec_from_file_location("_fx_tmp", path)
+        mod  = importlib.util.module_from_spec(spec)
+        sys.modules["_fx_tmp"] = mod
+        spec.loader.exec_module(mod)
+        return mod
+    finally:
+        if real_pytest is not None:
+            sys.modules["pytest"] = real_pytest
 
 
 def test_full_pipeline_simple_dict(tmp_path):
