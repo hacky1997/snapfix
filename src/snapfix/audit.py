@@ -27,8 +27,7 @@ from __future__ import annotations
 import dataclasses
 import pathlib
 import re
-import sys
-from typing import List, Optional
+from typing import List
 
 
 # ── PII detection patterns ────────────────────────────────────────────────────

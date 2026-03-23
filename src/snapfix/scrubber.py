@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Any, List, Tuple
+
+from typing import Any, List
 
 _SCRUBBED_STR = "***SCRUBBED***"
 _SCRUBBED_NUM = -1
@@ -19,7 +20,7 @@ class SnapfixScrubber:
             return self._numeric_replacement
         return _SCRUBBED_STR
 
-    def scrub(self, data: Any, _scrubbed: List[str] | None = None) -> Tuple[Any, List[str]]:
+    def scrub(self, data: Any, _scrubbed: List[str] | None = None) -> tuple[Any, List[str]]:
         """Returns (scrubbed_copy, list_of_scrubbed_key_paths).
         Does NOT mutate the input.
         """

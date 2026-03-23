@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import Optional
 
 import pytest
 
@@ -103,7 +102,7 @@ def pytest_collection_modifyitems(
 def pytest_collect_file(
     parent: pytest.Collector,
     file_path: pathlib.Path,
-) -> Optional[pytest.Collector]:
+) -> pytest.Collector | None:
     """
     Auto-collect snapfix_*.py fixture files from the configured output directory.
 

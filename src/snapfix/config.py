@@ -1,8 +1,10 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, field
 import os
 import pathlib
-from dataclasses import dataclass, field
 from typing import List
+
 import yaml
 
 DEFAULT_SCRUB_FIELDS: List[str] = [

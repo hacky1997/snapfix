@@ -5,9 +5,9 @@ import datetime
 import inspect
 import re
 import textwrap
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
-from snapfix.serializer import _MARKER, _UNSZ, _CIRC, _TRUNC, _DEPTH
+from snapfix.serializer import _CIRC, _DEPTH, _MARKER, _TRUNC, _UNSZ
 
 _TYPE_LABELS: dict[str, str] = {
     "datetime":  "datetime",
@@ -125,7 +125,7 @@ class SnapfixCodegen:
         data: Any,
         scrubbed_fields: List[str],
         captured_at: datetime.datetime,
-        source_fn: Optional[Callable] = None,
+        source_fn: Callable | None = None,
     ) -> str:
         fn_name = _sanitize(name)
 

@@ -1,8 +1,8 @@
+from snapfix.audit import AuditResult, scan_directory, scan_file
 from snapfix.capture import capture
+from snapfix.config import DEFAULT_SCRUB_FIELDS, SnapfixConfig
+from snapfix.diff import SnapfixSnapshot, structural_diff
 from snapfix.reconstruct import reconstruct
-from snapfix.config import SnapfixConfig, DEFAULT_SCRUB_FIELDS
-from snapfix.diff import structural_diff, SnapfixSnapshot
-from snapfix.audit import scan_directory, scan_file, AuditResult
 from snapfix.verify import verify_directory, verify_file, VerifyResult
 
 __all__ = [

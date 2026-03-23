@@ -3,14 +3,13 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
-from typing import Optional
 
 import typer
 
+from snapfix.audit import format_report as format_audit_report, scan_directory
 from snapfix.config import SnapfixConfig
 from snapfix.store import SnapfixStore
-from snapfix.audit import scan_directory, format_report as format_audit_report
-from snapfix.verify import verify_directory, format_verify_report
+from snapfix.verify import format_verify_report, verify_directory
 
 app = typer.Typer(
     name="snapfix",
@@ -20,7 +19,7 @@ app = typer.Typer(
 )
 
 
-def _store(output_dir: Optional[pathlib.Path] = None) -> SnapfixStore:
+def _store(output_dir: pathlib.Path | None = None) -> SnapfixStore:
     cfg = SnapfixConfig.from_env()
     return SnapfixStore(output_dir or cfg.output_dir)
 
@@ -39,7 +38,7 @@ def _default_dir() -> pathlib.Path:
 
 @app.command("list")
 def list_fixtures(
-    output_dir: Optional[pathlib.Path] = typer.Option(
+    output_dir: pathlib.Path | None = typer.Option(
         None, "--dir", "-d", help="Fixture directory (default: from config)."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON."),
@@ -71,7 +70,7 @@ def list_fixtures(
 @app.command("show")
 def show_fixture(
     name: str = typer.Argument(..., help="Fixture name."),
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
 ) -> None:
     """Print a captured fixture to stdout."""
     store = _store(output_dir)
@@ -91,7 +90,7 @@ def show_fixture(
 @app.command("diff")
 def diff_fixture(
     name: str = typer.Argument(..., help="Fixture name to diff."),
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
     mode: str = typer.Option(
         "structural", "--mode", "-m",
         help="Diff mode: 'structural' (field paths) or 'source' (raw Python).",
@@ -124,7 +123,7 @@ def diff_fixture(
         raise typer.Exit(0)
 
     import json as _json
-    from snapfix.diff import structural_diff, source_diff
+    from snapfix.diff import source_diff, structural_diff
     prev = _json.loads(prev_path.read_text())
     diff_str = structural_diff(prev, current, name) if mode == "structural" else source_diff(str(prev), str(current), name)
 
@@ -151,7 +150,7 @@ def diff_fixture(
 
 @app.command("audit")
 def audit_fixtures(
-    output_dir: Optional[pathlib.Path] = typer.Option(
+    output_dir: pathlib.Path | None = typer.Option(
         None, "--dir", "-d", help="Fixture directory (default: from config)."
     ),
     strict: bool = typer.Option(
@@ -210,7 +209,7 @@ def audit_fixtures(
 
 @app.command("verify")
 def verify_fixtures(
-    output_dir: Optional[pathlib.Path] = typer.Option(
+    output_dir: pathlib.Path | None = typer.Option(
         None, "--dir", "-d", help="Fixture directory (default: from config)."
     ),
     strict: bool = typer.Option(
@@ -257,7 +256,7 @@ def verify_fixtures(
 @app.command("clear")
 def clear_fixture(
     name: str = typer.Argument(..., help="Fixture name to delete."),
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
 ) -> None:
     """Delete a captured fixture and its snapshot."""
@@ -273,7 +272,7 @@ def clear_fixture(
 
 @app.command("clear-all")
 def clear_all(
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
 ) -> None:
     """Delete all captured fixtures and snapshots."""
@@ -292,7 +291,7 @@ def clear_all(
 
 @app.command("snapshots")
 def list_snapshots(
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
 ) -> None:
     """List all stored snapshots (used for diffing)."""
     store = _store(output_dir)

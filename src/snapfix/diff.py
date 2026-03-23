@@ -9,7 +9,7 @@ from __future__ import annotations
 import difflib
 import json
 import pathlib
-from typing import Any, Optional
+from typing import Any
 
 
 def _flatten(obj: Any, prefix: str = "") -> dict[str, str]:

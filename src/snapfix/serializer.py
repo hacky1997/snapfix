@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import base64
 import dataclasses
 import datetime
@@ -7,8 +8,9 @@ import enum
 import json
 import math
 import pathlib
-import uuid
 from typing import Any
+import uuid
+
 
 _MARKER = "__snapfix_type__"
 _UNSZ   = "__snapfix_unserializable__"
