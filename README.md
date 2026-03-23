@@ -1,64 +1,62 @@
-# Snapfix
+# snapfix
 
-**Capture real Python objects from staging, scrub sensitive fields, and emit `@pytest.fixture` files automatically.**
+**Capture real Python objects from staging, scrub PII automatically, emit `@pytest.fixture` files.**
+
+[![CI](https://github.com/hacky1997/snapfix/actions/workflows/ci.yml/badge.svg)](https://github.com/hacky1997/snapfix/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/snapfix.svg)](https://pypi.org/project/snapfix/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/snapfix.svg)](https://pypi.org/project/snapfix/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
 ## The problem
 
-You have a bug that only reproduces with real data. You need a test. You don't want to hand-build a factory that misses the edge case, and you don't want to copy-paste a production payload and accidentally commit a customer's email address.
+You have a bug that only reproduces with real data. You need a test. You don't want to hand-build a fixture that misses the edge case, and you don't want to copy-paste a production payload and accidentally commit a customer's email address.
 
-Snapfix solves this with one decorator.
+snapfix solves this with one decorator and one function call.
 
 ---
 
-## Screenshot-to-fix mode (why this can become a real product)
+## How it works in 30 seconds
 
-SnapFix can also act as a **debugging copilot for screenshots**: drop a traceback, terminal error, or UI failure screenshot, and get:
+```python
+# 1. Add the decorator to your staging/dev function
+from snapfix import capture
 
-1. Probable root cause
-2. Minimal patch strategy
-3. Confidence + risks
-4. Suggested verification steps
+@capture("invoice_response", scrub=["billing_name"])
+def fetch_invoice(invoice_id: str) -> dict:
+    return external_api.get(f"/invoices/{invoice_id}")
+```
 
-### 30-second interaction loop
+```
+# 2. Call it once against staging
+python -c "from myapp.billing import fetch_invoice; fetch_invoice('INV-8821')"
+```
 
-1. Drag the screenshot into SnapFix
-2. SnapFix OCRs + parses stack traces / error signatures
-3. It maps the likely cause and suggests a fix
-4. You apply, run tests, and iterate
+```
+snapfix ✓  fixture written: tests/fixtures/snapfix_invoice_response.py
+snapfix    scrubbed: customer.email, meta.token, billing_name
+snapfix    review before committing — value-level PII is not detected
+```
 
-This is the wedge that matters: engineers already share screenshots in Slack, PRs, and issue trackers. SnapFix converts that dead artifact into an executable next step.
+```python
+# 3. Use it in any test — no factory, no manual scrubbing, no pasted JSON
+def test_invoice_total(invoice_response):
+    assert invoice_response["amount"].quantize(Decimal("0.01")) == Decimal("149.99")
+```
 
-### 5 high-value scenarios where SnapFix is clearly superior
+The generated file is a standard `@pytest.fixture`. Remove the `@capture` decorator once the fixture is committed. Done.
 
-| User type | Situation | Why SnapFix wins (time/effort delta) |
-|---|---|---|
-| Junior/Mid engineer on-call | Pager fires, only evidence is a screenshot from the logs dashboard with a partial Python traceback | No manual transcription. SnapFix extracts error path + likely failing line and returns a patch direction in ~1-2 min vs 10-20 min of copy/search/context reconstruction. |
-| Senior dev reviewing PRs | CI fails on screenshot pasted in PR comment from a flaky test run | PR reviewer can diagnose without checking out the branch first. SnapFix provides likely root cause + deterministic repro hints, shrinking back-and-forth cycles in async review. |
-| Frontend engineer | PM posts a screenshot of a broken UI state (layout overflow, missing state, bad conditional render) | SnapFix can reason from visible UI + console error screenshot together; traditional “paste error in search” misses visual-state bugs. Faster path to a concrete component/file to inspect. |
-| DevRel / OSS maintainer | Issue reporters share screenshots instead of full logs (common in OSS) | Instead of rejecting low-quality bug reports, SnapFix triages noisy screenshots into structured repro hypotheses. Maintainer response latency drops, and issue closure rate improves. |
-| Bootstrapped founder/solo builder | Gets user-reported screenshots from production via support chat at odd hours | Screenshot-only bug triage means founder can ship fixes without a full observability stack. Biggest early-stage leverage: reduces “time-to-first-fix” when team size is 1. |
+---
 
-### Brutal adoption criteria (not generic)
+## Why this exists
 
-SnapFix should be adopted only if at least one is true:
+Hand-written fixtures have two failure modes:
 
-- Your team regularly debugs from screenshots in Slack/Linear/Jira
-- You lose >3 engineer-hours/week to “can’t reproduce from partial logs”
-- You maintain OSS and receive low-context bug reports
+- **Wrong shape.** You guessed the API response structure. You missed `amount_due` vs `amount`, or that `customer` is sometimes a string ID and sometimes an expanded object. The fixture passes, production fails.
+- **PII in git history.** The fastest path to a real fixture is printing a live API response and pasting it. The result is customer emails and tokens committed to your repository. `git history` does not forget.
 
-SnapFix will fail if:
-
-- Your org already has perfect, structured, searchable logs with full trace context
-- Your screenshots routinely omit the relevant error region
-- You expect fully autonomous fixes without human verification
-
-### YC / adoption / growth reality check
-
-- **YC partner lens:** The wedge is strong only if screenshot-to-fix is measurably faster than ChatGPT + manual OCR. Defensibility must come from workflow integration (GitHub, Slack, CI), not just model quality.
-- **Senior dev lens:** Adoption happens only with low false-confidence output. Show confidence scores, exact assumptions, and “don’t know” fallback paths.
-- **Growth lens (first 10k users):** Start with communities that already communicate in screenshots (indie hackers, OSS maintainers, agency teams). “Fix from screenshot in 90s” is a better hook than “AI debugger.”
+snapfix eliminates both by capturing the actual object your code returns and stripping sensitive fields before writing anything to disk.
 
 ---
 
@@ -68,88 +66,134 @@ SnapFix will fail if:
 pip install snapfix
 ```
 
-Python 3.10+ required. No other required dependencies.
+Python 3.10+ required. No API keys. No external services. Two runtime dependencies (`typer`, `pyyaml`).
 
 ---
 
-## Quickstart
+## Quick start
+
+### Step 1 — Add the decorator
 
 ```python
-# In your service code (staging or development only)
+# myapp/billing.py
 from snapfix import capture
 
-@capture("invoice_response", scrub=["billing_name"])
-def fetch_invoice(invoice_id: str) -> dict:
-    return external_api.get(f"/invoices/{invoice_id}")
+@capture(
+    "stripe_invoice_paid",
+    scrub=["metadata"],   # any custom fields beyond the defaults
+)
+async def fetch_invoice(invoice_id: str) -> dict:
+    invoice = await stripe.Invoice.retrieve(invoice_id, expand=["customer"])
+    return invoice.to_dict()
 ```
 
-Call the function once against staging. snapfix writes this to `tests/fixtures/snapfix_invoice_response.py`:
+Works on both **sync** and **async** functions. The decorator is transparent — the return value is always unchanged, and exceptions propagate normally with no fixture written.
+
+### Step 2 — Call it once in development or staging
+
+```bash
+python -c "
+import asyncio
+from myapp.billing import fetch_invoice
+asyncio.run(fetch_invoice('in_1OkRealInvoiceId'))
+"
+```
+
+snapfix writes `tests/fixtures/snapfix_stripe_invoice_paid.py`:
 
 ```python
-# Generated by snapfix -- do not edit manually
-# Captured : 2026-03-23T14:22:01
-# Scrubbed : customer.email, meta.token, billing_name
+# Generated by snapfix — do not edit manually
+# Regenerate  : re-run the @snapfix.capture decorated function
+# Captured    : 2026-03-24T14:22:01
+# Source      : myapp.billing.fetch_invoice (myapp/billing.py)
+# Scrubbed    : customer.email, customer.address, metadata.internal_ref
+#
+# ⚠  Review before committing: value-level PII is not detected.
+#    All scrubbed fields are listed above.
 import pytest
 from snapfix import reconstruct
 
 @pytest.fixture
-def invoice_response():
+def stripe_invoice_paid():
     return reconstruct({
-        "id": "INV-8821",
-        "customer": {
-            "email": "***SCRUBBED***",
-            "billing_name": "***SCRUBBED***",
-            "plan": "pro",
-        },
-        "amount": {"__snapfix_type__": "decimal", "value": "149.99"},
-        "issued_at": {"__snapfix_type__": "datetime", "value": "2026-03-01T09:00:00"},
-        "meta": {
-            "token": "***SCRUBBED***",
-            "retry": 0,
-        },
+        'id': 'in_1OkRealInvoiceId',
+        'amount_due': 14999,
+        'amount_paid': 14999,
+        'currency': 'usd',
+        'status': 'paid',
+        'customer_email': '***SCRUBBED***',
+        'created': {'__snapfix_type__': 'datetime', 'value': '2026-03-01T09:00:00'},  # datetime
+        'metadata': '***SCRUBBED***',
     })
 ```
 
-Use it in any test:
+### Step 3 — Review, commit, and remove the decorator
+
+Review the `# Scrubbed:` header to confirm every sensitive field was caught. Commit. Remove `@capture` from your function.
+
+### Step 4 — Write tests against real structure
 
 ```python
-def test_invoice_total(invoice_response):
-    assert invoice_response["amount"].quantize(Decimal("0.01")) == Decimal("149.99")
+def test_invoice_is_paid(stripe_invoice_paid):
+    assert stripe_invoice_paid["status"] == "paid"
+
+def test_invoice_amount_in_cents(stripe_invoice_paid):
+    assert stripe_invoice_paid["amount_paid"] == 14999     # Stripe uses integer cents
+    assert isinstance(stripe_invoice_paid["amount_paid"], int)
+
+def test_pii_is_scrubbed(stripe_invoice_paid):
+    assert stripe_invoice_paid["customer_email"] == "***SCRUBBED***"
+
+def test_created_is_datetime(stripe_invoice_paid):
+    assert isinstance(stripe_invoice_paid["created"], datetime.datetime)
 ```
 
-That's it. No factory definition. No manual scrubbing. No pasted JSON.
+---
+
+## Supported Python types
+
+`reconstruct()` restores all of these correctly. No manual type-casting in tests.
+
+| Type | Round-trips as |
+|---|---|
+| `dict`, `list`, `str`, `int`, `float`, `bool`, `None` | Same |
+| `datetime.datetime` / `.date` / `.time` / `.timedelta` | Same |
+| `uuid.UUID` | `UUID` |
+| `decimal.Decimal` | `Decimal` |
+| `bytes` / `bytearray` | Same |
+| `pathlib.Path` | `Path` |
+| `enum.Enum` | `.value` (enum class not preserved) |
+| `tuple` | `list` — JSON has no tuple type; documented |
+| `set` / `frozenset` | `set` / `frozenset` |
+| `dataclass` | `dict` |
+| `pydantic.BaseModel` | `dict` |
+| Circular reference | Sentinel dict `{"__snapfix_circular__": true}` |
+| Unserializable type | Sentinel dict with `__snapfix_unserializable__` |
 
 ---
 
 ## PII scrubbing
 
-> **⚠ Important limitation:** snapfix scrubs fields by **key name only**. It does NOT detect PII
-> in field values. An email address stored as `response["tags"][0]` or inside a list
-> will **not** be scrubbed. Always review generated fixtures before committing them.
+> **⚠ Limitation:** snapfix scrubs by **field name only**. It does NOT detect PII in field values. An email address stored as `response["tags"][0]` will **not** be scrubbed. Always review generated fixtures before committing.
 
 ### Default scrubbed field names
 
-Any key whose name contains one of these strings (case-insensitive, substring match) is scrubbed:
+Any key whose name contains one of these strings (case-insensitive, substring match):
 
-`email` · `password` · `passwd` · `token` · `secret` · `api_key` · `apikey` ·
-`access_token` · `refresh_token` · `ssn` · `credit_card` · `card_number` ·
-`cvv` · `phone` · `mobile` · `dob` · `date_of_birth` · `address` ·
-`ip_address` · `authorization` · `auth` · `bearer`
+`email` · `password` · `passwd` · `token` · `secret` · `api_key` · `apikey` · `access_token` · `refresh_token` · `ssn` · `credit_card` · `card_number` · `cvv` · `phone` · `mobile` · `dob` · `date_of_birth` · `address` · `ip_address` · `authorization` · `auth` · `bearer`
 
-`customer_email` → scrubbed (substring match on `email`)  
-`billing_phone_number` → scrubbed (substring match on `phone`)  
-`retry_count` → **not** scrubbed
+`customer_email` → scrubbed · `billing_phone_number` → scrubbed · `retry_count` → **not** scrubbed
 
 ### Adding custom fields
 
 ```python
-@capture("order", scrub=["customer_id", "tax_number"])
+@capture("order", scrub=["customer_id", "tax_number", "metadata"])
 def fetch_order(order_id: str) -> dict: ...
 ```
 
 ### Replacement values
 
-| Field value type | Replacement |
+| Original type | Replacement |
 |---|---|
 | `str` | `"***SCRUBBED***"` |
 | `int` / `float` | `-1` |
@@ -157,79 +201,132 @@ def fetch_order(order_id: str) -> dict: ...
 
 ---
 
-## Supported types
+## pytest plugin
 
-snapfix serializes the following Python types and restores them correctly via `reconstruct()`:
+snapfix registers itself as a first-class pytest plugin via the `pytest11` entry point — no `conftest.py` changes required after install.
 
-| Type | Serialized as | Restored on `reconstruct()` |
-|---|---|---|
-| `dict`, `list`, `str`, `int`, `float`, `bool`, `None` | JSON native | Same |
-| `datetime.datetime` | ISO 8601 string + marker | `datetime` |
-| `datetime.date` | ISO 8601 string + marker | `date` |
-| `datetime.time` | ISO 8601 string + marker | `time` |
-| `datetime.timedelta` | total seconds + marker | `timedelta` |
-| `uuid.UUID` | string + marker | `UUID` |
-| `decimal.Decimal` | string + marker | `Decimal` |
-| `bytes` | base64 + marker | `bytes` |
-| `bytearray` | base64 + marker | `bytearray` |
-| `pathlib.Path` | string + marker | `Path` |
-| `enum.Enum` | `.value` + marker | value only (enum class not preserved) |
-| `tuple` | list + marker | `list` (documented: tuples become lists) |
-| `set` / `frozenset` | sorted list + marker | `set` / `frozenset` |
-| `dataclass` | `dataclasses.asdict()` then recurse | `dict` |
-| `pydantic.BaseModel` | `.model_dump()` then recurse | `dict` |
-| Circular reference | `{"__snapfix_circular__": true}` | sentinel dict |
-| Unserializable type | `{"__snapfix_unserializable__": true, ...}` | sentinel dict |
+```
+pytest --snapfix-capture          # enable capture for this session
+pytest --no-snapfix-capture       # disable capture (also set automatically in CI)
+pytest --snapfix-dir path/to/dir  # override fixture output directory
+```
 
-> **Note:** `tuple` → `list` on roundtrip is intentional. JSON has no tuple type.
-> If your tests depend on the exact type, assert `isinstance(result, list)` rather than `tuple`.
+Generated fixture files (`snapfix_*.py`) are auto-discovered by pytest and appear in `pytest --collect-only` and `pytest --fixtures`.
+
+**CI safety:** capture is automatically disabled in CI environments (when `CI=true`) unless `--snapfix-capture` is explicitly passed. This prevents accidental staging traffic from test runs.
 
 ---
 
-## Configuration
-
-### Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `SNAPFIX_OUTPUT_DIR` | `tests/fixtures` | Where fixture files are written |
-| `SNAPFIX_MAX_DEPTH` | `10` | Maximum serialization depth |
-| `SNAPFIX_MAX_SIZE` | `500000` | Maximum payload size in bytes |
-| `SNAPFIX_ENABLED` | `true` | Set to `false` to disable all capture |
-
-### `snapfix.yaml` (project root)
-
-```yaml
-snapfix:
-  output_dir: tests/fixtures
-  max_depth: 10
-  max_size_bytes: 500000
-  enabled: true
-```
-
-### Priority order (highest to lowest)
-
-1. Decorator parameters: `@capture(name, scrub=[...], max_depth=5)`
-2. Environment variables
-3. `snapfix.yaml`
-4. Built-in defaults
-
-### Disabling in production
-
-Set `SNAPFIX_ENABLED=false` in your production environment. The decorator becomes a no-op — zero overhead, no files written, no exceptions swallowed.
-
----
-
-## CLI
-
-```
-snapfix list              # List all captured fixtures with metadata
-snapfix show  <name>      # Print a fixture to stdout
-snapfix clear <name>      # Delete one fixture (prompts for confirmation)
-snapfix clear-all         # Delete all fixtures (prompts for confirmation)
-```
+## CLI reference
 
 All commands accept `--dir <path>` to target a non-default fixture directory.
+
+### `snapfix list`
+
+```
+snapfix list [--dir PATH] [--json]
+```
+
+Lists all captured fixtures with capture timestamp and scrubbed fields. Fixtures with a stored snapshot show `◉`; new ones show `○`.
+
+### `snapfix show <name>`
+
+```
+snapfix show invoice_response
+```
+
+Prints a fixture file to stdout.
+
+### `snapfix diff <name>`
+
+```
+snapfix diff stripe_invoice_paid
+snapfix diff stripe_invoice_paid --mode source
+```
+
+Shows what changed structurally between the last two captures of a fixture. Exits with code `1` if differences are found — safe to use in CI. Re-capturing after an API version upgrade will show new or removed fields.
+
+```
+✗  Changes detected in 'stripe_invoice_paid':
+--- stripe_invoice_paid (previous)
++++ stripe_invoice_paid (current)
+@@ -1,3 +1,5 @@
+ lines.data[0].amount: 14999
++lines.data[0].amount_excluding_tax: 14999
++lines.data[0].tax_amounts: []
+```
+
+### `snapfix audit`
+
+```
+snapfix audit [--strict] [--quiet]
+```
+
+Scans fixture files for PII that field-name scrubbing may have missed. Checks for email addresses, US phone numbers, SSNs, credit card numbers (Visa/MC/Amex/Discover), AWS access keys, and long API-key-like strings. Skips lines that already contain `***SCRUBBED***` or use obvious test data (`example.com`, `test@`, `dummy`, `fake`).
+
+```
+snapfix audit — tests/fixtures/
+────────────────────────────────────────────────────────────
+  Files scanned : 8
+  Findings      : 0
+  Status        : ✓ PASSED — no PII patterns detected
+```
+
+Use `--strict` to exit with code `1` on any finding. Integrate as a pre-commit hook:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: snapfix-audit
+        name: snapfix PII audit
+        entry: snapfix audit --strict
+        language: system
+        files: ^tests/fixtures/snapfix_.*\.py$
+```
+
+### `snapfix verify`
+
+```
+snapfix verify [--strict]
+```
+
+Runs all fixture files through `reconstruct()` and confirms they are valid Python, importable without errors, callable, and return a non-None result. With `--strict`, also fails on fixtures containing truncated, circular, or unserializable sentinels.
+
+```
+snapfix verify — tests/fixtures/
+────────────────────────────────────────────────────────────
+  ✓  snapfix_stripe_invoice_paid.py  [stripe_invoice_paid]
+  ✓  snapfix_stripe_subscription.py  [stripe_subscription]
+  ─────────────────────────────────────
+  Total   : 2  |  Passed : 2
+  Status  : ✓ ALL VALID
+```
+
+Add to CI alongside `pytest`:
+
+```yaml
+# .github/workflows/ci.yml
+- run: snapfix verify
+- run: pytest --tb=short -q
+```
+
+### `snapfix snapshots`
+
+```
+snapfix snapshots
+```
+
+Lists all stored snapshots available for `snapfix diff`.
+
+### `snapfix clear <name>` / `snapfix clear-all`
+
+```
+snapfix clear invoice_response        # prompts for confirmation
+snapfix clear invoice_response --yes  # skip confirmation
+snapfix clear-all --yes
+```
 
 ---
 
@@ -238,55 +335,126 @@ All commands accept `--dir <path>` to target a non-default fixture directory.
 ```python
 @capture(
     name,                # str — fixture name; becomes the function name in the output file
-    scrub=None,          # list[str] | None — extra field names to scrub (merged with defaults)
+    scrub=None,          # list[str] | None — extra fields to scrub (merged with defaults)
     max_depth=None,      # int | None — override max serialization depth
     max_size_bytes=None, # int | None — override max payload size
     config=None,         # SnapfixConfig | None — full config override
 )
 ```
 
-Works on both **sync** and **async** functions. The decorator is transparent:
+Guarantees:
 
-- The return value is always preserved unchanged.
-- If the wrapped function raises, the exception propagates normally and **no file is written**.
-- If serialization fails for any reason, a `warnings.warn()` is emitted and execution continues.
+- Return value is **always** preserved unchanged.
+- If the decorated function raises, the exception propagates and **no file is written**.
+- If serialization fails, `warnings.warn()` is emitted and execution continues. The decorator never raises.
+
+---
+
+## Configuration
+
+### `snapfix.yaml` (project root)
+
+```yaml
+snapfix:
+  output_dir: tests/fixtures   # where fixture files are written
+  max_depth: 10                # maximum serialization depth
+  max_size_bytes: 500000       # maximum payload size in bytes
+  enabled: true                # set to false to disable globally
+```
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SNAPFIX_OUTPUT_DIR` | `tests/fixtures` | Fixture output directory |
+| `SNAPFIX_MAX_DEPTH` | `10` | Maximum serialization depth |
+| `SNAPFIX_MAX_SIZE` | `500000` | Maximum payload size in bytes |
+| `SNAPFIX_ENABLED` | `true` | Set to `false` to disable all capture |
+
+### Priority order
+
+1. Decorator parameters: `@capture(name, scrub=[...], max_depth=5)`
+2. Environment variables
+3. `snapfix.yaml`
+4. Built-in defaults
+
+### Disabling in production
+
+```bash
+SNAPFIX_ENABLED=false  # set in your production environment
+```
+
+The decorator becomes a no-op — zero overhead, no files written, no exceptions swallowed.
+
+---
+
+## ⚠️ Limitations
+
+Be aware of these before using snapfix in your workflow:
+
+**PII detection is field-name only.** An email stored as `payload["tags"][0]` or inside a list value will not be scrubbed. `snapfix audit` adds a regex-based second pass, but it is not exhaustive. Always review generated fixtures before committing.
+
+**Not safe against production traffic.** Use snapfix against staging or development only. Even with scrubbing enabled, value-level PII will not be caught.
+
+**`tuple` becomes `list` on roundtrip.** JSON has no tuple type. This is intentional and documented. If your test asserts tuple type, assert `isinstance(result, list)` instead.
+
+**Enum class is not preserved.** `reconstruct()` returns the `.value` of an enum, not the enum instance.
+
+**Large payloads are silently skipped.** If the serialized payload exceeds `max_size_bytes` (default 500 KB), no fixture is written and a warning is emitted. Increase `SNAPFIX_MAX_SIZE` or reduce `max_depth`.
+
+**Latency in staging.** Serialization adds overhead proportional to payload size. Negligible for typical API responses (< 50 KB). Do not enable in a production critical path.
+
+---
+
+## Roadmap
+
+- `snapfix[presidio]` — optional value-level PII detection via Microsoft Presidio
+- GitHub Actions integration — post diff results as PR comments on re-capture
+- Type-stub generation for captured dataclass fixtures
+- `snapfix upgrade` — re-capture all fixtures in batch from a replay log
 
 ---
 
 ## FAQ
 
-**Is it safe to use against production traffic?**
-No. Use snapfix against staging or a development environment. Production traffic contains real customer data. Even with scrubbing enabled, value-level PII (email addresses in list fields, etc.) will not be caught.
+**Can I regenerate a fixture?**
+Yes. Re-run the decorated function. The fixture file is overwritten in place, and the previous snapshot is rotated to `.prev.json` for `snapfix diff`.
 
-**Does it slow down my application?**
-Serialization adds latency proportional to payload size. For typical API responses (< 50 KB), the overhead is negligible in staging. Do not enable `SNAPFIX_ENABLED=true` in a production critical path.
-
-**What happens if the object is too large?**
-If the serialized payload exceeds `max_size_bytes`, the fixture is not written and a warning is emitted. Increase `SNAPFIX_MAX_SIZE` or add depth limiting with `max_depth`.
+**Does it work with `pytest.mark.parametrize`?**
+Yes. The generated file is a standard `@pytest.fixture`. It works with everything pytest supports.
 
 **What happens if a field contains an unserializable type?**
-It is replaced with a sentinel dict: `{"__snapfix_unserializable__": true, "__snapfix_repr__": "...", "__snapfix_type_name__": "..."}`. The rest of the object is still captured. `reconstruct()` returns the sentinel as-is.
+It is replaced with a sentinel dict: `{"__snapfix_unserializable__": true, "__snapfix_repr__": "...", ...}`. The rest of the object is still captured. `reconstruct()` returns the sentinel as-is.
 
-**Can I regenerate a fixture?**
-Yes. Re-run the decorated function. The fixture file is overwritten in place.
+**Does capture slow down my staging environment?**
+For typical API responses under 50 KB, the overhead is a few milliseconds. For larger payloads, consider using `max_depth` to limit serialization depth.
 
-**Does it work with pytest parametrize?**
-The generated file is a standard `@pytest.fixture`. It works with everything pytest supports.
+**Is it safe to leave `@capture` in the codebase long-term?**
+Set `SNAPFIX_ENABLED=false` in all non-development environments. The decorator becomes a zero-overhead no-op.
+
+**Can I use it with `conftest.py`?**
+After install, snapfix auto-registers as a pytest plugin — no conftest changes needed. If you want to explicitly load it: `pytest_plugins = ["snapfix.plugin"]`.
 
 ---
 
-## Development
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for scope, development setup, and PR requirements.
+
+**TL;DR:**
 
 ```bash
-git clone https://github.com/yourname/snapfix
+git clone https://github.com/hacky1997/snapfix
 cd snapfix
 pip install -e ".[dev]"
-pytest
+pytest --tb=short -q
 ruff check src/
 ```
+
+snapfix has a narrow scope: capture Python objects, scrub PII by field name, emit `@pytest.fixture` files. PRs that expand this scope will be declined. Open a discussion first if you're unsure.
 
 ---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
