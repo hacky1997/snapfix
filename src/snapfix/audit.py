@@ -27,8 +27,6 @@ from __future__ import annotations
 import dataclasses
 import pathlib
 import re
-from typing import List
-
 
 # ── PII detection patterns ────────────────────────────────────────────────────
 # These are deliberately conservative — they only flag high-confidence patterns
@@ -137,7 +135,7 @@ class Finding:
 @dataclasses.dataclass
 class AuditResult:
     files_scanned: int
-    findings:      List[Finding]
+    findings:      list[Finding]
     passed:        bool
 
     @property
@@ -145,9 +143,9 @@ class AuditResult:
         return len(self.findings)
 
 
-def scan_file(path: pathlib.Path) -> List[Finding]:
+def scan_file(path: pathlib.Path) -> list[Finding]:
     """Scan a single fixture file for PII patterns. Returns list of findings."""
-    findings: List[Finding] = []
+    findings: list[Finding] = []
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except Exception:
@@ -181,7 +179,7 @@ def scan_directory(
 ) -> AuditResult:
     """Scan all snapfix fixture files in a directory."""
     files   = sorted(directory.glob(glob))
-    all_findings: List[Finding] = []
+    all_findings: list[Finding] = []
 
     for f in files:
         all_findings.extend(scan_file(f))
@@ -201,8 +199,8 @@ def format_report(result: AuditResult, directory: pathlib.Path) -> str:
     lines.append(f"  Files scanned : {result.files_scanned}")
 
     if result.passed:
-        lines.append(f"  Findings      : 0")
-        lines.append(f"  Status        : ✓ PASSED — no PII patterns detected\n")
+        lines.append("  Findings      : 0")
+        lines.append("  Status        : ✓ PASSED — no PII patterns detected\n")
         lines.append(
             "  Note: This audit checks for common PII value patterns.\n"
             "  It does not guarantee all PII has been removed.\n"
@@ -211,7 +209,7 @@ def format_report(result: AuditResult, directory: pathlib.Path) -> str:
         return "\n".join(lines)
 
     lines.append(f"  Findings      : {result.finding_count}")
-    lines.append(f"  Status        : ✗ FAILED — potential PII detected\n")
+    lines.append("  Status        : ✗ FAILED — potential PII detected\n")
 
     by_file: dict[str, list[Finding]] = {}
     for f in result.findings:

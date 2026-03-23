@@ -6,7 +6,8 @@ import sys
 
 import typer
 
-from snapfix.audit import format_report as format_audit_report, scan_directory
+from snapfix.audit import format_report as format_audit_report
+from snapfix.audit import scan_directory
 from snapfix.config import SnapfixConfig
 from snapfix.store import SnapfixStore
 from snapfix.verify import format_verify_report, verify_directory
@@ -123,6 +124,7 @@ def diff_fixture(
         raise typer.Exit(0)
 
     import json as _json
+
     from snapfix.diff import source_diff, structural_diff
     prev = _json.loads(prev_path.read_text())
     diff_str = structural_diff(prev, current, name) if mode == "structural" else source_diff(str(prev), str(current), name)

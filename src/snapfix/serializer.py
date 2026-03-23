@@ -8,9 +8,8 @@ import enum
 import json
 import math
 import pathlib
-from typing import Any
 import uuid
-
+from typing import Any
 
 _MARKER = "__snapfix_type__"
 _UNSZ   = "__snapfix_unserializable__"

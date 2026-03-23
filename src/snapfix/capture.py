@@ -5,8 +5,9 @@ import datetime
 import functools
 import pathlib
 import sys
-from typing import Any, Callable, List
 import warnings
+from collections.abc import Callable
+from typing import Any
 
 from snapfix.codegen import SnapfixCodegen
 from snapfix.config import SnapfixConfig
@@ -28,7 +29,7 @@ def _get_config(cfg: SnapfixConfig | None) -> SnapfixConfig:
 
 def capture(
     name: str,
-    scrub: List[str] | None = None,
+    scrub: list[str] | None = None,
     max_depth: int | None = None,
     max_size_bytes: int | None = None,
     config: SnapfixConfig | None = None,
@@ -55,7 +56,7 @@ def capture(
 def _record(
     name: str,
     obj: Any,
-    extra_scrub: List[str] | None,
+    extra_scrub: list[str] | None,
     max_depth: int | None,
     max_size_bytes: int | None,
     cfg_override: SnapfixConfig | None,
@@ -109,7 +110,7 @@ def _c(text: str, code: str) -> str:
     return f"\033[{code}m{text}\033[0m"
 
 
-def _print_success(name: str, path: pathlib.Path, scrubbed_keys: List[str]) -> None:
+def _print_success(name: str, path: pathlib.Path, scrubbed_keys: list[str]) -> None:
     label  = _c("snapfix", "1;36")        # bold cyan
     tick   = _c("✓", "32")                # green
     print(f"\n  {label} {tick}  fixture written: {path}", file=sys.stderr)
@@ -151,7 +152,7 @@ def _get_hint(exc: Exception) -> str:
     if "circular" in msg:
         return "Object contains a circular reference. snapfix handles this — check the output for __snapfix_circular__ markers."
     if "permission" in msg or "errno 13" in msg:
-        return f"Cannot write to output directory. Check SNAPFIX_OUTPUT_DIR or snapfix.yaml."
+        return "Cannot write to output directory. Check SNAPFIX_OUTPUT_DIR or snapfix.yaml."
     if "serializ" in msg:
         return "An object type could not be serialized. Check the fixture for __snapfix_unserializable__ markers."
     return "Run with SNAPFIX_ENABLED=false to skip capture and investigate the object manually."

@@ -23,7 +23,6 @@ import pathlib
 
 import pytest
 
-
 # ── pytest hooks ──────────────────────────────────────────────────────────────
 
 def pytest_addoption(parser: pytest.Parser) -> None:

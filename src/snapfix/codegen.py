@@ -5,7 +5,8 @@ import datetime
 import inspect
 import re
 import textwrap
-from typing import Any, Callable, List
+from collections.abc import Callable
+from typing import Any
 
 from snapfix.serializer import _CIRC, _DEPTH, _MARKER, _TRUNC, _UNSZ
 
@@ -123,7 +124,7 @@ class SnapfixCodegen:
         self,
         name: str,
         data: Any,
-        scrubbed_fields: List[str],
+        scrubbed_fields: list[str],
         captured_at: datetime.datetime,
         source_fn: Callable | None = None,
     ) -> str:
