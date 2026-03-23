@@ -10,6 +10,18 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.2] — 2026-03-23
+
+### Fixed — release reliability
+- PyPI publish workflow now uses `skip-existing: true` to avoid failing
+  re-runs for an already-published artifact.
+
+### Fixed — package lint hygiene
+- Applied import/order/newline and typing-hint lint fixes across `src/` so
+  `ruff check src` passes consistently in CI.
+
+---
+
 ## [0.3.1] — 2026-03-24
 
 ### Added — `snapfix audit`
