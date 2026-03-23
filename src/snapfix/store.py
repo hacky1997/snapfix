@@ -5,7 +5,7 @@ import pathlib
 import re
 from typing import Any
 
-from snapfix.diff import SnapfixSnapshot, structural_diff, source_diff
+from snapfix.diff import SnapfixSnapshot, source_diff, structural_diff
 
 
 class SnapfixStore:
