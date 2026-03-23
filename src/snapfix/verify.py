@@ -22,7 +22,7 @@ import importlib.util
 import pathlib
 import sys
 import types
-from typing import Any, List, Optional
+from typing import Any
 
 
 # Import reconstruct directly — we need it available when executing fixture modules
@@ -34,9 +34,9 @@ class VerifyResult:
     file:          pathlib.Path
     fixture_name:  str
     passed:        bool
-    error:         Optional[str]
-    warnings:      List[str]
-    value_type:    Optional[str]
+    error:         str | None
+    warnings:      list[str]
+    value_type:    str | None
 
     def __str__(self) -> str:
         status = "✓" if self.passed else "✗"
@@ -61,7 +61,7 @@ def _has_sentinel(value: Any, key: str, _depth: int = 0) -> bool:
 def verify_file(path: pathlib.Path, strict: bool = False) -> VerifyResult:
     """Verify a single fixture file. Returns a VerifyResult."""
     fixture_name = path.stem.removeprefix("snapfix_")
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     # Step 1: valid Python
     try:
@@ -156,13 +156,13 @@ def verify_directory(
     directory: pathlib.Path,
     glob: str = "snapfix_*.py",
     strict: bool = False,
-) -> List[VerifyResult]:
+) -> list[VerifyResult]:
     """Verify all snapfix fixture files in a directory."""
     files = sorted(directory.glob(glob))
     return [verify_file(f, strict=strict) for f in files]
 
 
-def format_verify_report(results: List[VerifyResult], directory: pathlib.Path) -> str:
+def format_verify_report(results: list[VerifyResult], directory: pathlib.Path) -> str:
     """Return a human-readable verify report."""
     passed  = [r for r in results if r.passed]
     failed  = [r for r in results if not r.passed]
@@ -186,11 +186,11 @@ def format_verify_report(results: List[VerifyResult], directory: pathlib.Path) -
     lines.append(f"  Warnings: {len(warned)}")
 
     if failed:
-        lines.append(f"\n  Status  : ✗ FAILED")
+        lines.append("\n  Status  : ✗ FAILED")
         lines.append("  Re-capture failed fixtures: remove @capture, add it again,")
         lines.append("  call the function once in staging.")
     else:
-        lines.append(f"\n  Status  : ✓ ALL VALID")
+        lines.append("\n  Status  : ✓ ALL VALID")
 
     lines.append("")
     return "\n".join(lines)
