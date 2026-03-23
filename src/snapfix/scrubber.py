@@ -1,13 +1,12 @@
 from __future__ import annotations
-
-from typing import Any
+from typing import Any, List, Tuple
 
 _SCRUBBED_STR = "***SCRUBBED***"
 _SCRUBBED_NUM = -1
 
 
 class SnapfixScrubber:
-    def __init__(self, fields: list[str], *, numeric_replacement: int = _SCRUBBED_NUM):
+    def __init__(self, fields: List[str], *, numeric_replacement: int = _SCRUBBED_NUM):
         self._fields = [f.lower() for f in fields]
         self._numeric_replacement = numeric_replacement
 
@@ -20,7 +19,7 @@ class SnapfixScrubber:
             return self._numeric_replacement
         return _SCRUBBED_STR
 
-    def scrub(self, data: Any, _scrubbed: list[str] | None = None) -> tuple[Any, list[str]]:
+    def scrub(self, data: Any, _scrubbed: List[str] | None = None) -> Tuple[Any, List[str]]:
         """Returns (scrubbed_copy, list_of_scrubbed_key_paths).
         Does NOT mutate the input.
         """
@@ -30,7 +29,7 @@ class SnapfixScrubber:
         result = self._scrub_node(data, _scrubbed, path="")
         return result, _scrubbed
 
-    def _scrub_node(self, data: Any, scrubbed: list[str], path: str) -> Any:
+    def _scrub_node(self, data: Any, scrubbed: List[str], path: str) -> Any:
         if isinstance(data, dict):
             out = {}
             for k, v in data.items():

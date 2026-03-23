@@ -1,12 +1,11 @@
 from __future__ import annotations
-
 import os
 import pathlib
 from dataclasses import dataclass, field
-
+from typing import List
 import yaml
 
-DEFAULT_SCRUB_FIELDS: list[str] = [
+DEFAULT_SCRUB_FIELDS: List[str] = [
     "email","password","passwd","token","secret","api_key","apikey",
     "access_token","refresh_token","ssn","credit_card","card_number",
     "cvv","phone","mobile","dob","date_of_birth","address","ip_address",
@@ -16,13 +15,13 @@ DEFAULT_SCRUB_FIELDS: list[str] = [
 @dataclass
 class SnapfixConfig:
     output_dir: pathlib.Path = pathlib.Path("tests/fixtures")
-    default_scrub_fields: list[str] = field(default_factory=lambda: list(DEFAULT_SCRUB_FIELDS))
+    default_scrub_fields: List[str] = field(default_factory=lambda: list(DEFAULT_SCRUB_FIELDS))
     max_depth: int = 10
     max_size_bytes: int = 500_000
     enabled: bool = True
 
     @classmethod
-    def from_env(cls) -> SnapfixConfig:
+    def from_env(cls) -> "SnapfixConfig":
         return cls(
             output_dir=pathlib.Path(os.environ.get("SNAPFIX_OUTPUT_DIR", "tests/fixtures")),
             max_depth=int(os.environ.get("SNAPFIX_MAX_DEPTH", 10)),
@@ -31,7 +30,7 @@ class SnapfixConfig:
         )
 
     @classmethod
-    def from_yaml(cls, path: pathlib.Path) -> SnapfixConfig:
+    def from_yaml(cls, path: pathlib.Path) -> "SnapfixConfig":
         if not path.exists():
             return cls.from_env()
         try:

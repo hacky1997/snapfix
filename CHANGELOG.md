@@ -1,9 +1,8 @@
 # Changelog
 
 All notable changes to snapfix are documented here.
-
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-snapfix uses [Semantic Versioning](https://semver.org/).
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Versioning: [Semantic Versioning](https://semver.org/).
 
 ---
 
@@ -11,35 +10,99 @@ snapfix uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.1] — 2026-03-24
+
+### Added — `snapfix audit`
+- `snapfix audit` CLI command — scans fixture files for PII value patterns
+  that field-name scrubbing may have missed
+- Detects: email addresses, US phone numbers, SSNs, credit card numbers
+  (Visa/MC/Amex/Discover), AWS access keys, long API key-like strings
+- Skips lines that already contain `***SCRUBBED***`, `example.com`,
+  `test@`, `placeholder`, `dummy`, or `fake` — minimises false positives
+- `--strict` flag: exit code 1 on any finding (pre-commit / CI safe)
+- `--quiet` flag: only print findings, no full report
+- Pre-commit hook configuration documented in `snapfix audit --help`
+- `snapfix.audit.scan_file()` and `scan_directory()` as public API
+- `AuditResult` and `Finding` dataclasses for programmatic use
+
+### Added — `snapfix verify`
+- `snapfix verify` CLI command — runs all fixture files through
+  `reconstruct()` and confirms they import, execute, and return valid data
+- Checks: valid Python syntax, importable without errors, fixture function
+  callable, returns a non-None result (warning), no sentinel markers
+- `--strict` flag: fail on `__snapfix_truncated__`, `__snapfix_circular__`,
+  or `__snapfix_unserializable__` markers in fixture return values
+- `snapfix.verify.verify_file()` and `verify_directory()` as public API
+- `VerifyResult` dataclass for programmatic use
+- Add `snapfix verify` to CI alongside `pytest` for full fixture health checks
+
+### Added — pre-commit hook documentation
+- `.pre-commit-config.yaml` example for `snapfix audit --strict` in README
+  and `snapfix audit --help`
+
+---
+
+## [0.3.0] — 2026-03-24
+
+### Added — pytest plugin
+- `snapfix.plugin` registered as a `pytest11` entry point — snapfix is now a
+  first-class pytest plugin, no `conftest.py` changes required
+- `--snapfix-capture` flag: enable capture for the entire pytest session
+- `--no-snapfix-capture` flag: disable capture for the entire pytest session
+- `--snapfix-dir PATH` flag: override output directory for the session
+- Auto-discovery of `snapfix_*.py` fixture files via `pytest_collect_file` —
+  generated fixtures appear in `pytest --collect-only` and `pytest --fixtures`
+- `snapfix_store` session-scoped fixture for testing store interactions
+- `snapfix_config` session-scoped fixture for testing `@capture` usage
+- Auto-disables capture in CI environments unless `--snapfix-capture` is
+  explicitly passed — prevents accidental staging traffic in CI
+
+### Added — `snapfix diff` command
+- `snapfix diff <name>` — shows structural field-path diff between the last
+  two captures of a fixture; exits with code 1 if differences found (CI-safe)
+- `snapfix diff <name> --mode source` — shows raw Python source diff
+- `snapfix.diff.structural_diff()` — public API for programmatic diffing
+- `snapfix.diff.SnapfixSnapshot` — snapshot store for diff state management
+- Snapshot rotation: each re-capture rotates previous snapshot to `.prev.json`
+- `snapfix snapshots` CLI command — lists all stored snapshots
+- `snapfix list` now shows `◉` for fixtures with snapshots, `○` for new ones
+
+### Changed — first-run experience
+- Capture success now prints a colored confirmation to stderr with the fixture
+  path and list of scrubbed fields
+- Capture failure now prints a loud, structured error to stderr with the exact
+  exception type, a context-specific hint, and instructions
+- `codegen.py`: all `__snapfix_type__` markers now have inline comments
+  (e.g., `# datetime`, `# UUID`, `# Decimal`) making generated fixtures
+  human-readable without knowing the marker format
+- Generated fixture header now includes the source function's fully-qualified
+  name and file path
+- Capture decorator passes serialized data to store for snapshot tracking
+
+### Fixed
+- `pyyaml` added to runtime `dependencies` in `pyproject.toml` (was missing,
+  caused `ModuleNotFoundError: No module named 'yaml'` on fresh installs)
+
+---
+
 ## [0.1.0] — 2026-03-23
 
 ### Added
-- `@capture` decorator — captures return values of sync and async functions
-- `reconstruct()` — restores `__snapfix_type__` markers to Python types
-- `SnapfixConfig` — config dataclass with env var and YAML override hierarchy
-- `SnapfixSerializer` — recursive serializer supporting 15 Python types:
-  `datetime`, `date`, `time`, `timedelta`, `UUID`, `Decimal`, `bytes`,
-  `bytearray`, `Path`, `Enum`, `set`, `frozenset`, `tuple`, `dataclass`,
-  pydantic v1/v2 `BaseModel`
-- Circular reference detection — emits `__snapfix_circular__` sentinel
-- Max depth guard — emits `__snapfix_maxdepth__` sentinel at `max_depth`
-- Max size guard — emits `__snapfix_truncated__` sentinel above `max_size_bytes`
-- Unserializable type fallback — emits `__snapfix_unserializable__` sentinel
-- `SnapfixScrubber` — recursive field-name-based PII scrubber (case-insensitive
-  substring matching, 22 default field patterns, no input mutation)
+- `@capture` decorator (sync + async), `reconstruct()`, `SnapfixConfig`
+- `SnapfixSerializer` supporting 15 Python types with circular ref / depth /
+  size guards and unserializable fallback
+- `SnapfixScrubber` — recursive field-name PII scrubber, no input mutation
 - `SnapfixCodegen` — generates valid `@pytest.fixture` Python source
-- `SnapfixStore` — atomic fixture file writes with `.snapfix_index.json`
+- `SnapfixStore` — atomic fixture writes with `.snapfix_index.json`
 - CLI: `snapfix list`, `snapfix show`, `snapfix clear`, `snapfix clear-all`
-- `snapfix.yaml` project-level configuration support
-- `SNAPFIX_ENABLED`, `SNAPFIX_OUTPUT_DIR`, `SNAPFIX_MAX_DEPTH`,
-  `SNAPFIX_MAX_SIZE` environment variable overrides
+- `snapfix.yaml` project-level config, env var overrides
+- `py.typed` PEP 561 marker
 
 ### Documented limitations
-- Field-name scrubbing only: PII in field values is not detected
-- `tuple` → `list` on roundtrip (JSON has no tuple type)
-- Enum class is not preserved on roundtrip, only `.value`
-- Objects without `__dict__`, `.model_dump()`, or `.dict()` emit the
-  `__snapfix_unserializable__` sentinel
+- Field-name scrubbing only: value-level PII not detected
+- `tuple` → `list` on roundtrip (JSON limitation)
+- Enum class not preserved on roundtrip
 
-[Unreleased]: https://github.com/yourname/snapfix/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourname/snapfix/releases/tag/v0.1.0
+[Unreleased]: https://github.com/hacky1997/snapfix/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/hacky1997/snapfix/compare/v0.1.0...v0.3.0
+[0.1.0]: https://github.com/hacky1997/snapfix/releases/tag/v0.1.0

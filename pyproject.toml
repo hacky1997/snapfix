@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name            = "snapfix"
-version         = "0.1.0"
+version         = "0.3.1"
 description     = "Capture real Python objects, scrub sensitive fields, emit pytest fixtures."
 readme          = "README.md"
 license         = { text = "MIT" }
@@ -20,6 +20,7 @@ classifiers     = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: Pytest",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -40,11 +41,18 @@ dev = [
 [project.scripts]
 snapfix = "snapfix.cli:app"
 
+# ── pytest plugin entry point ─────────────────────────────────────────────────
+# This registers snapfix.plugin with every pytest run automatically.
+# Users get --snapfix-capture, --no-snapfix-capture, --snapfix-dir flags
+# without any conftest.py changes.
+[project.entry-points."pytest11"]
+snapfix = "snapfix.plugin"
+
 [project.urls]
-Homepage      = "https://github.com/yourname/snapfix"
-Documentation = "https://github.com/yourname/snapfix#readme"
-Issues        = "https://github.com/yourname/snapfix/issues"
-Changelog     = "https://github.com/yourname/snapfix/blob/main/CHANGELOG.md"
+Homepage      = "https://github.com/hacky1997/snapfix"
+Documentation = "https://github.com/hacky1997/snapfix#readme"
+Issues        = "https://github.com/hacky1997/snapfix/issues"
+Changelog     = "https://github.com/hacky1997/snapfix/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/snapfix"]
@@ -59,7 +67,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP"]
-ignore = ["E501"]
+ignore = ["E501", "UP006", "UP007"]
 
 [tool.mypy]
 python_version         = "3.10"
