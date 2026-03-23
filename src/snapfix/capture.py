@@ -1,21 +1,22 @@
 from __future__ import annotations
+
 import asyncio
 import datetime
 import functools
 import pathlib
 import warnings
-from typing import Any, Callable, List, Optional
+from collections.abc import Callable
 
-from snapfix.config import SnapfixConfig
-from snapfix.serializer import SnapfixSerializer
-from snapfix.scrubber import SnapfixScrubber
 from snapfix.codegen import SnapfixCodegen
+from snapfix.config import SnapfixConfig
+from snapfix.scrubber import SnapfixScrubber
+from snapfix.serializer import SnapfixSerializer
 from snapfix.store import SnapfixStore
 
-_default_config: Optional[SnapfixConfig] = None
+_default_config: SnapfixConfig | None = None
 
 
-def _get_config(cfg: Optional[SnapfixConfig]) -> SnapfixConfig:
+def _get_config(cfg: SnapfixConfig | None) -> SnapfixConfig:
     global _default_config
     if cfg is not None:
         return cfg
@@ -27,10 +28,10 @@ def _get_config(cfg: Optional[SnapfixConfig]) -> SnapfixConfig:
 
 def capture(
     name: str,
-    scrub: Optional[List[str]] = None,
-    max_depth: Optional[int] = None,
-    max_size_bytes: Optional[int] = None,
-    config: Optional[SnapfixConfig] = None,
+    scrub: list[str] | None = None,
+    max_depth: int | None = None,
+    max_size_bytes: int | None = None,
+    config: SnapfixConfig | None = None,
 ) -> Callable:
     """Decorator: capture function return value and emit a pytest fixture."""
     def decorator(fn: Callable) -> Callable:

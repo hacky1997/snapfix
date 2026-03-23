@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Optional
 
 import typer
 
@@ -16,14 +15,14 @@ app = typer.Typer(
 )
 
 
-def _store(output_dir: Optional[pathlib.Path] = None) -> SnapfixStore:
+def _store(output_dir: pathlib.Path | None = None) -> SnapfixStore:
     cfg = SnapfixConfig.from_env()
     return SnapfixStore(output_dir or cfg.output_dir)
 
 
 @app.command("list")
 def list_fixtures(
-    output_dir: Optional[pathlib.Path] = typer.Option(
+    output_dir: pathlib.Path | None = typer.Option(
         None, "--dir", "-d", help="Fixture output directory (default: from config)."
     ),
 ) -> None:
@@ -47,7 +46,7 @@ def list_fixtures(
 @app.command("show")
 def show_fixture(
     name: str = typer.Argument(..., help="Fixture name (without snapfix_ prefix)."),
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
 ) -> None:
     """Print a captured fixture to stdout."""
     store = _store(output_dir)
@@ -65,7 +64,7 @@ def show_fixture(
 @app.command("clear")
 def clear_fixture(
     name: str = typer.Argument(..., help="Fixture name to delete."),
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
 ) -> None:
     """Delete a captured fixture."""
@@ -81,7 +80,7 @@ def clear_fixture(
 
 @app.command("clear-all")
 def clear_all(
-    output_dir: Optional[pathlib.Path] = typer.Option(None, "--dir", "-d"),
+    output_dir: pathlib.Path | None = typer.Option(None, "--dir", "-d"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
 ) -> None:
     """Delete all captured fixtures."""

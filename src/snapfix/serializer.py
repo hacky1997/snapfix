@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import base64
 import dataclasses
 import datetime
@@ -8,7 +9,7 @@ import json
 import math
 import pathlib
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 _MARKER = "__snapfix_type__"
 _UNSZ   = "__snapfix_unserializable__"
@@ -23,7 +24,7 @@ class SnapfixSerializer:
         self.max_size_bytes = max_size_bytes
         self._size_counter = 0
 
-    def serialize(self, obj: Any, _depth: int = 0, _seen: Optional[set] = None) -> Any:
+    def serialize(self, obj: Any, _depth: int = 0, _seen: set | None = None) -> Any:
         if _seen is None:
             _seen = set()
             self._size_counter = 0

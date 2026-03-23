@@ -1,8 +1,10 @@
 from __future__ import annotations
+
+import builtins
 import json
 import pathlib
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 
 class SnapfixStore:
@@ -11,7 +13,7 @@ class SnapfixStore:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._index_path = self.output_dir / ".snapfix_index.json"
 
-    def _load_index(self) -> Dict:
+    def _load_index(self) -> dict:
         if self._index_path.exists():
             try:
                 return json.loads(self._index_path.read_text())
@@ -19,12 +21,12 @@ class SnapfixStore:
                 return {}
         return {}
 
-    def _save_index(self, idx: Dict):
+    def _save_index(self, idx: dict):
         tmp = self._index_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(idx, indent=2, default=str))
         tmp.replace(self._index_path)
 
-    def write(self, name: str, source: str, metadata: Dict[str, Any]) -> pathlib.Path:
+    def write(self, name: str, source: str, metadata: dict[str, Any]) -> pathlib.Path:
         safe = _sanitize(name)
         path = self.output_dir / f"snapfix_{safe}.py"
         tmp  = path.with_suffix(".tmp")
@@ -35,7 +37,7 @@ class SnapfixStore:
         self._save_index(idx)
         return path
 
-    def list(self) -> List[Dict]:
+    def list(self) -> builtins.list[dict]:
         return list(self._load_index().values())
 
     def exists(self, name: str) -> bool:
