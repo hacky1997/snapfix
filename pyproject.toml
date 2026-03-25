@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name            = "snapfix"
-version         = "0.3.2"
+version         = "0.3.3"
 description     = "Capture real Python objects, scrub sensitive fields, emit pytest fixtures."
 authors         = []
 readme          = "README.md"
