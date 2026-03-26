@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name            = "snapfix"
 version         = "0.3.3"
 description     = "Capture real Python objects, scrub sensitive fields, emit pytest fixtures."
-authors         = []
+authors         = [{name = "Sayak Naskar", email = "Sayaknaskar@gmail.com"}]
 readme          = "README.md"
 license         = { text = "MIT" }
 requires-python = ">=3.10"
